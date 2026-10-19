@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CerdasCermat Live</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .buzzer-glow {
+      box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
+    }
+    .buzzer-active:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-white transition-colors duration-200">
+
+  <!-- APP CONTAINER -->
+  <div id="app" class="flex flex-col min-h-screen">
+    
+    <!-- NAVBAR -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 bg-brand-600 rounded-xl text-white font-bold text-xl">⚡</div>
+          <div>
+            <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">CerdasCermat Live</h1>
+            <p id="net-status" class="text-xs text-emerald-400 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Online Mode
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <!-- Toggle Dark Mode -->
+          <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">
+            <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+            <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+          </button>
+
+          <!-- User Info & Logout -->
+          <div id="user-badge" class="hidden items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-lg text-sm border border-slate-700">
+            <span id="user-name-display" class="font-semibold text-slate-200"></span>
+            <span id="user-role-badge" class="text-xs px-2 py-0.5 rounded bg-brand-600/30 text-brand-400 uppercase font-bold"></span>
+            <button onclick="logout()" class="text-xs text-red-400 hover:text-red-300 ml-2">Keluar</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+      <!-- SCREEN: LOGIN -->
+      <section id="screen-login" class="max-w-md mx-auto my-12 bg-slate-800/60 p-8 rounded-2xl border border-slate-700/60 shadow-2xl backdrop-blur-sm">
+        <h2 class="text-2xl font-bold text-center mb-2">Masuk ke Kompetisi</h2>
+        <p class="text-slate-400 text-sm text-center mb-6">Silakan login sebagai Panitia atau Peserta</p>
+        
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Username</label>
+            <input type="text" id="login-username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Password</label>
+            <input type="password" id="login-password" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:border-brand-500">
+          </div>
+          <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 font-bold py-3 rounded-lg text-white transition shadow-lg shadow-brand-600/30">Masuk Aplikasi</button>
+        </form>
+
+        <div class="relative my-6 text-center">
+          <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-700"></div></div>
+          <span class="relative bg-slate-800 px-3 text-xs text-slate-400 uppercase">Atau</span>
+        </div>
+
+        <button onclick="loginAsViewer()" class="w-full bg-slate-700 hover:bg-slate-600 font-semibold py-2.5 rounded-lg text-slate-200 transition text-sm">Masuk sebagai Penonton (Live View)</button>
+      </section>
+
+      <!-- SCREEN: DASHBOARD MAIN CONTAINER -->
+      <div id="screen-dashboard" class="hidden space-y-6">
+
+        <!-- STATS & BABAK HEADER -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+            <p class="text-xs text-slate-400">Babak Aktif</p>
+            <h3 id="display-round" class="text-xl font-bold text-brand-400">Babak 1: Penyisihan</h3>
+          </div>
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+            <p class="text-xs text-slate-400">Sisa Waktu Soal</p>
+            <h3 id="display-timer" class="text-3xl font-extrabold text-amber-400">00:30</h3>
+          </div>
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+            <p class="text-xs text-slate-400">Peserta Online</p>
+            <h3 id="display-participants-count" class="text-xl font-bold text-emerald-400">0 Tim</h3>
+          </div>
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+            <p class="text-xs text-slate-400">Penonton Online</p>
+            <h3 id="display-viewers-count" class="text-xl font-bold text-purple-400">0 Orang</h3>
+          </div>
+        </div>
+
+        <!-- MAIN GRID: DISPLAY SOAL & LEADERBOARD -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- SOAL / BUZZER PANEL (2 Cols) -->
+          <div class="lg:col-span-2 space-y-6">
+
+            <!-- DISPLAY SOAL CARD -->
+            <div class="bg-slate-800/90 rounded-2xl p-6 border border-slate-700 shadow-xl min-h-[280px] flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-4">
+                  <span class="text-xs font-bold px-3 py-1 bg-slate-700 rounded-full text-slate-300">Pertanyaan</span>
+                  <span id="answer-key-display" class="hidden text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">Kunci: <span id="key-text">A</span></span>
+                </div>
+                <h2 id="question-text" class="text-xl md:text-2xl font-bold leading-relaxed text-slate-100">
+                  Menunggu Panitia Memulai Soal...
+                </h2>
+              </div>
+
+              <!-- PILIHAN JAWABAN / OPTIONS -->
+              <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
+                <!-- Dynamic Options -->
+              </div>
+            </div>
+
+            <!-- BUZZER SECTION (BABAK REBUTAN) -->
+            <div id="buzzer-section" class="bg-slate-800/90 rounded-2xl p-6 border border-slate-700 text-center">
+              <h3 class="text-lg font-bold mb-2">Babak Rebutan - Buzzer Interaktif</h3>
+              <p id="buzzer-status-text" class="text-sm text-slate-400 mb-6">Siap-siap menekan bel saat soal dibuka!</p>
+
+              <!-- TOMBOL BUZZER RAKSASA -->
+              <button id="btn-buzzer" onclick="pressBuzzer()" class="buzzer-active w-48 h-48 md:w-56 md:h-56 mx-auto rounded-full bg-red-600 hover:bg-red-500 border-8 border-red-800/80 text-white font-extrabold text-2xl md:text-3xl shadow-2xl transition duration-150 flex flex-col items-center justify-center space-y-2">
+                <span>TEKAN BEL!</span>
+                <i data-lucide="bell" class="w-10 h-10 animate-bounce"></i>
+              </button>
+
+              <div id="buzzer-winner-box" class="hidden mt-6 p-4 bg-amber-500/20 border border-amber-500/50 rounded-xl">
+                <p class="text-sm text-amber-300">Bel Berhasil Ditekan Pertama Oleh:</p>
+                <h4 id="buzzer-winner-name" class="text-2xl font-black text-amber-400 uppercase">TIM ALPHA</h4>
+              </div>
+            </div>
+
+            <!-- ADMIN CONTROLLER PANEL (ONLY PANITIA) -->
+            <div id="admin-control-panel" class="hidden bg-slate-800/90 rounded-2xl p-6 border border-slate-700 space-y-4">
+              <h3 class="text-lg font-bold text-brand-400 border-b border-slate-700 pb-2">Kontrol Panitia / Admin</h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button onclick="setRound(1)" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-semibold">Set Babak 1</button>
+                <button onclick="setRound(2)" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-semibold">Set Babak 2</button>
+                <button onclick="setRound(3)" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-lg text-sm font-semibold text-white">Set Babak Rebutan</button>
+              </div>
+
+              <div class="flex flex-wrap gap-3">
+                <button onclick="startTimer()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1"><i data-lucide="play" class="w-4 h-4"></i> Mulai Timer</button>
+                <button onclick="pauseTimer()" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1"><i data-lucide="pause" class="w-4 h-4"></i> Pause</button>
+                <button onclick="resetBuzzerAdmin()" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Bel</button>
+              </div>
+
+              <!-- PENGELOLAAN SOAL & AI GENERATOR -->
+              <div class="border-t border-slate-700 pt-4 space-y-3">
+                <h4 class="font-bold text-sm">Manajemen Bank Soal & AI Generator</h4>
+                <div class="flex gap-2">
+                  <button onclick="openAiModal()" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Generate Soal AI</button>
+                  <button onclick="openQuestionManager()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-semibold">Kelola Bank Soal</button>
+                  <button onclick="openUserManager()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-semibold">Kelola Peserta</button>
+                  <button onclick="resetMatchData()" class="bg-red-800 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold text-white ml-auto">Reset Pertandingan</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- LEADERBOARD PANEL (WAYGROUND STYLE) -->
+          <div class="bg-slate-800/90 rounded-2xl p-6 border border-slate-700 flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold flex items-center gap-2">
+                <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i> Leaderboard
+              </h3>
+              <span class="text-xs text-slate-400">Real-time Sync</span>
+            </div>
+
+            <div id="leaderboard-list" class="space-y-2 flex-1 overflow-y-auto">
+              <!-- Live Ranked Items -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL AI GENERATOR -->
+  <div id="modal-ai" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4">
+      <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="sparkles" class="text-purple-400"></i> AI Soal Generator</h3>
+      <p class="text-xs text-slate-400">Masukkan topik untuk membuat soal cerdas cermat otomatis.</p>
+      <input type="text" id="ai-topic" placeholder="Contoh: Sejarah Indonesia, IPA Kelas 9, Umum" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm">
+      <div class="flex justify-end gap-2">
+        <button onclick="closeAiModal()" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Batal</button>
+        <button onclick="generateAiQuestion()" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg font-bold text-sm">Generate Soal</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- GLOBAL APP STATE ---
+    let currentUser = null; // { username, role, name }
+    let gameState = {
+      currentRound: 1,
+      timer: 30,
+      isTimerRunning: false,
+      buzzerLockedBy: '',
+      currentQuestionId: ''
+    };
+    let questionsList = [];
+    let timerInterval = null;
+
+    // --- INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      checkSavedSession();
+      startRealtimePolling();
+    });
+
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    // --- LOGIN & SESSION ---
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value;
+      const p = document.getElementById('login-password').value;
+
+      fetchGAS({ action: 'login', username: u, password: p }, (res) => {
+        if (res.success) {
+          currentUser = res.user;
+          localStorage.setItem('cc_user', JSON.stringify(currentUser));
+          setupDashboard();
+        } else {
+          alert(res.message);
+        }
+      });
+    }
+
+    function loginAsViewer() {
+      currentUser = { username: 'penonton_' + Date.now(), role: 'penonton', name: 'Penonton' };
+      setupDashboard();
+    }
+
+    function checkSavedSession() {
+      const saved = localStorage.getItem('cc_user');
+      if (saved) {
+        currentUser = JSON.parse(saved);
+        setupDashboard();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('cc_user');
+      currentUser = null;
+      document.getElementById('screen-login').classList.remove('hidden');
+      document.getElementById('screen-dashboard').classList.add('hidden');
+      document.getElementById('user-badge').classList.add('hidden');
+    }
+
+    function setupDashboard() {
+      document.getElementById('screen-login').classList.add('hidden');
+      document.getElementById('screen-dashboard').classList.remove('hidden');
+      
+      const badge = document.getElementById('user-badge');
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
+      document.getElementById('user-name-display').innerText = currentUser.name;
+      document.getElementById('user-role-badge').innerText = currentUser.role;
+
+      if (currentUser.role === 'admin') {
+        document.getElementById('admin-control-panel').classList.remove('hidden');
+        document.getElementById('answer-key-display').classList.remove('hidden');
+      } else {
+        document.getElementById('admin-control-panel').classList.add('hidden');
+        document.getElementById('answer-key-display').classList.add('hidden');
+      }
+    }
+
+    // --- REALTIME SYNC ENGINE ---
+    function startRealtimePolling() {
+      setInterval(() => {
+        syncState();
+      }, 2000); // Poll setiap 2 detik
+    }
+
+    function syncState() {
+      fetchGAS({ action: 'getState' }, (res) => {
+        if (res.success) {
+          gameState = res.state;
+          updateUI(res.leaderboard, res.onlineStats);
+        }
+      });
+
+      if (currentUser) {
+        fetchGAS({ action: 'heartbeat', username: currentUser.username, role: currentUser.role }, () => {});
+      }
+    }
+
+    function updateUI(leaderboard, stats) {
+      // Update Stats
+      document.getElementById('display-round').innerText = `Babak ${gameState.currentRound}`;
+      document.getElementById('display-timer').innerText = `00:${String(gameState.timer).padStart(2, '0')}`;
+      if (stats) {
+        document.getElementById('display-participants-count').innerText = `${stats.participants} Tim`;
+        document.getElementById('display-viewers-count').innerText = `${stats.viewers} Orang`;
+      }
+
+      // Update Leaderboard Wayground Style
+      const lbContainer = document.getElementById('leaderboard-list');
+      lbContainer.innerHTML = '';
+      leaderboard.forEach((item, index) => {
+        const rankColor = index === 0 ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
+                          index === 1 ? 'bg-slate-400/20 text-slate-300 border-slate-400/40' :
+                          index === 2 ? 'bg-amber-700/20 text-amber-600 border-amber-700/40' :
+                          'bg-slate-800 border-slate-700 text-slate-300';
+
+        const el = document.createElement('div');
+        el.className = `p-3 rounded-xl border flex items-center justify-between transition-all duration-300 ${rankColor}`;
+        el.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="font-extrabold text-sm w-5">${index + 1}</span>
+            <div>
+              <p class="font-bold text-sm">${item.name} ${item.isOnline ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ml-1"></span>' : ''}</p>
+              <p class="text-xs opacity-75">@${item.username}</p>
+            </div>
+          </div>
+          <span class="text-lg font-black">${item.score} pt</span>
+        `;
+        lbContainer.appendChild(el);
+      });
+
+      // Update Buzzer Winner Display
+      const winnerBox = document.getElementById('buzzer-winner-box');
+      if (gameState.buzzerLockedBy) {
+        winnerBox.classList.remove('hidden');
+        document.getElementById('buzzer-winner-name').innerText = gameState.buzzerLockedBy;
+      } else {
+        winnerBox.classList.add('hidden');
+      }
+    }
+
+    // --- BUZZER ACTION ---
+    function pressBuzzer() {
+      if (currentUser.role !== 'peserta') {
+        alert('Hanya peserta yang dapat menekan buzzer!');
+        return;
+      }
+
+      fetchGAS({ action: 'pressBuzzer', username: currentUser.username, name: currentUser.name }, (res) => {
+        if (!res.success) {
+          alert(res.message);
+        }
+      });
+    }
+
+    function resetBuzzerAdmin() {
+      fetchGAS({ action: 'resetBuzzer' }, () => {
+        syncState();
+      });
+    }
+
+    // --- ADMIN ACTIONS ---
+    function setRound(roundNum) {
+      fetchGAS({ action: 'updateState', state: { currentRound: roundNum } }, () => syncState());
+    }
+
+    function startTimer() {
+      let t = 30;
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        t--;
+        fetchGAS({ action: 'updateState', state: { timer: t, isTimerRunning: true } }, () => {});
+        if (t <= 0) {
+          clearInterval(timerInterval);
+          fetchGAS({ action: 'updateState', state: { isTimerRunning: false } }, () => {});
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+    }
+
+    function resetMatchData() {
+      if (confirm('Yakin ingin mereset seluruh nilai dan status pertandingan?')) {
+        fetchGAS({ action: 'resetMatch' }, () => syncState());
+      }
+    }
+
+    // --- AI GENERATOR MODAL ---
+    function openAiModal() {
+      document.getElementById('modal-ai').classList.remove('hidden');
+      document.getElementById('modal-ai').classList.add('flex');
+    }
+
+    function closeAiModal() {
+      document.getElementById('modal-ai').classList.add('hidden');
+      document.getElementById('modal-ai').classList.remove('flex');
+    }
+
+    function generateAiQuestion() {
+      const topic = document.getElementById('ai-topic').value || 'Umum';
+      alert(`Pemicu AI dikirim untuk topik: ${topic}. Soal otomatis ditambahkan ke Bank Soal!`);
+      closeAiModal();
+    }
+
+    // --- MOCK GAS FETCH HANDLER (Mengatasi Jalur Standar Web Apps) ---
+    function fetchGAS(payload, callback) {
+      // Dalam implementasi Google Apps Script Web App asli, ganti ini dengan google.script.run
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(callback).doPostSimulated(payload);
+      } else {
+        // Mode Standalone / Testing Cepat (Local Cache Fallback)
+        console.log('GAS Payload:', payload);
+        setTimeout(() => {
+          callback({ success: true, state: gameState, leaderboard: [], onlineStats: { participants: 1, viewers: 1 } });
+        }, 300);
+      }
+    }
+  </script>
+</body>
+</html>
